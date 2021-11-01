@@ -1,11 +1,15 @@
 package tech.tablesaw.api;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 import com.google.common.base.Preconditions;
 import it.unimi.dsi.fastutil.longs.*;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Set;
 import java.util.stream.LongStream;
 import tech.tablesaw.columns.AbstractColumnParser;
 import tech.tablesaw.columns.Column;
@@ -15,9 +19,10 @@ import tech.tablesaw.columns.numbers.NumberColumnFormatter;
 import tech.tablesaw.selection.BitmapBackedSelection;
 import tech.tablesaw.selection.Selection;
 
+/** A column in a table that contains long values */
 public class LongColumn extends NumberColumn<LongColumn, Long> implements CategoricalColumn<Long> {
 
-  private final LongArrayList data;
+  protected final LongArrayList data;
 
   private LongColumn(String name, LongArrayList data) {
     super(LongColumnType.instance(), name, LongColumnType.DEFAULT_PARSER);
@@ -75,9 +80,6 @@ public class LongColumn extends NumberColumn<LongColumn, Long> implements Catego
   @Override
   public String getString(final int row) {
     final long value = getLong(row);
-    if (LongColumnType.valueIsMissing(value)) {
-      return "";
-    }
     return getPrintFormatter().format(value);
   }
 
@@ -165,9 +167,9 @@ public class LongColumn extends NumberColumn<LongColumn, Long> implements Catego
 
   @Override
   public LongColumn lag(int n) {
-    final int srcPos = n >= 0 ? 0 : 0 - n;
+    final int srcPos = n >= 0 ? 0 : -n;
     final long[] dest = new long[size()];
-    final int destPos = n <= 0 ? 0 : n;
+    final int destPos = Math.max(n, 0);
     final int length = n >= 0 ? size() - n : size() + n;
 
     for (int i = 0; i < size(); i++) {
@@ -285,7 +287,13 @@ public class LongColumn extends NumberColumn<LongColumn, Long> implements Catego
 
   @Override
   public LongColumn append(final Column<Long> column) {
-    Preconditions.checkArgument(column.type() == this.type());
+    Preconditions.checkArgument(
+        column.type() == this.type(),
+        "Column '%s' has type %s, but column '%s' has type %s.",
+        name(),
+        type(),
+        column.name(),
+        column.type());
     final LongColumn numberColumn = (LongColumn) column;
     final int size = numberColumn.size();
     for (int i = 0; i < size; i++) {
@@ -296,13 +304,25 @@ public class LongColumn extends NumberColumn<LongColumn, Long> implements Catego
 
   @Override
   public LongColumn append(Column<Long> column, int row) {
-    Preconditions.checkArgument(column.type() == this.type());
+    checkArgument(
+        column.type() == this.type(),
+        "Column '%s' has type %s, but column '%s' has type %s.",
+        name(),
+        type(),
+        column.name(),
+        column.type());
     return append(((LongColumn) column).getLong(row));
   }
 
   @Override
   public LongColumn set(int row, Column<Long> column, int sourceRow) {
-    Preconditions.checkArgument(column.type() == this.type());
+    checkArgument(
+        column.type() == this.type(),
+        "Column '%s' has type %s, but column '%s' has type %s.",
+        name(),
+        type(),
+        column.name(),
+        column.type());
     return set(row, ((LongColumn) column).getLong(sourceRow));
   }
 
@@ -316,6 +336,12 @@ public class LongColumn extends NumberColumn<LongColumn, Long> implements Catego
     return ByteBuffer.allocate(LongColumnType.instance().byteSize())
         .putLong(getLong(rowNumber))
         .array();
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public Set<Long> asSet() {
+    return new HashSet<>(unique().asList());
   }
 
   @Override

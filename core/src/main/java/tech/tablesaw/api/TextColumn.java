@@ -14,6 +14,9 @@
 
 package tech.tablesaw.api;
 
+import static tech.tablesaw.api.ColumnType.STRING;
+import static tech.tablesaw.api.ColumnType.TEXT;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import it.unimi.dsi.fastutil.ints.IntComparator;
@@ -44,7 +47,7 @@ import tech.tablesaw.selection.Selection;
 public class TextColumn extends AbstractStringColumn<TextColumn> {
 
   // holds each element in the column.
-  private List<String> values;
+  protected List<String> values;
 
   private final IntComparator rowComparator =
       (i, i1) -> {
@@ -112,26 +115,31 @@ public class TextColumn extends AbstractStringColumn<TextColumn> {
     return column;
   }
 
+  /** {@inheritDoc} */
   @Override
   public boolean isMissing(int rowNumber) {
     return get(rowNumber).equals(TextColumnType.missingValueIndicator());
   }
 
+  /** {@inheritDoc} */
   @Override
   public TextColumn emptyCopy() {
     return create(name());
   }
 
+  /** {@inheritDoc} */
   @Override
   public TextColumn emptyCopy(int rowSize) {
     return create(name(), rowSize);
   }
 
+  /** {@inheritDoc} */
   @Override
   public void sortAscending() {
     values.sort(String::compareTo);
   }
 
+  /** {@inheritDoc} */
   @Override
   public void sortDescending() {
     values.sort(descendingStringComparator);
@@ -172,6 +180,7 @@ public class TextColumn extends AbstractStringColumn<TextColumn> {
     return new ArrayList<>(values);
   }
 
+  /** {@inheritDoc} */
   @Override
   public Table summary() {
     Table table = Table.create("Column: " + name());
@@ -188,11 +197,13 @@ public class TextColumn extends AbstractStringColumn<TextColumn> {
     return table;
   }
 
+  /** {@inheritDoc} */
   @Override
   public void clear() {
     values.clear();
   }
 
+  /** {@inheritDoc} */
   @Override
   public TextColumn lead(int n) {
     TextColumn column = lag(-n);
@@ -200,6 +211,7 @@ public class TextColumn extends AbstractStringColumn<TextColumn> {
     return column;
   }
 
+  /** {@inheritDoc} */
   @Override
   public TextColumn lag(int n) {
 
@@ -243,6 +255,7 @@ public class TextColumn extends AbstractStringColumn<TextColumn> {
     return this;
   }
 
+  /** {@inheritDoc} */
   @Override
   public TextColumn set(int rowIndex, String stringValue) {
     if (stringValue == null) {
@@ -252,6 +265,7 @@ public class TextColumn extends AbstractStringColumn<TextColumn> {
     return this;
   }
 
+  /** {@inheritDoc} */
   @Override
   public int countUnique() {
     return asSet().size();
@@ -268,6 +282,7 @@ public class TextColumn extends AbstractStringColumn<TextColumn> {
     return values.contains(aString);
   }
 
+  /** {@inheritDoc} */
   @Override
   public TextColumn setMissing(int i) {
     return set(i, TextColumnType.missingValueIndicator());
@@ -285,23 +300,27 @@ public class TextColumn extends AbstractStringColumn<TextColumn> {
     return this;
   }
 
+  /** {@inheritDoc} */
   @Override
   public TextColumn appendCell(String object) {
     append(parser().parse(object));
     return this;
   }
 
+  /** {@inheritDoc} */
   @Override
   public TextColumn appendCell(String object, AbstractColumnParser<?> parser) {
     append(String.valueOf(parser.parse(object)));
     return this;
   }
 
+  /** {@inheritDoc} */
   @Override
   public IntComparator rowComparator() {
     return rowComparator;
   }
 
+  /** {@inheritDoc} */
   @Override
   public boolean isEmpty() {
     return values.isEmpty();
@@ -318,12 +337,14 @@ public class TextColumn extends AbstractStringColumn<TextColumn> {
     return TextColumn.create(name() + " Unique values", strings);
   }
 
+  /** {@inheritDoc} */
   @Override
   public TextColumn where(Selection selection) {
     return subset(selection.toArray());
   }
 
   // TODO (lwhite): This could avoid the append and do a list copy
+  /** {@inheritDoc} */
   @Override
   public TextColumn copy() {
     TextColumn newCol = create(name(), size());
@@ -335,13 +356,19 @@ public class TextColumn extends AbstractStringColumn<TextColumn> {
     return newCol;
   }
 
+  /** {@inheritDoc} */
   @Override
   public TextColumn append(Column<String> column) {
-    Preconditions.checkArgument(column.type() == this.type());
-    TextColumn source = (TextColumn) column;
-    final int size = source.size();
+    Preconditions.checkArgument(
+        column.type() == TEXT || column.type().equals(STRING),
+        "Column '%s' has type %s, but column '%s' has type %s.",
+        name(),
+        type(),
+        column.name(),
+        column.type());
+    final int size = column.size();
     for (int i = 0; i < size; i++) {
-      append(source.getString(i));
+      append(column.getString(i));
     }
     return this;
   }
@@ -358,6 +385,7 @@ public class TextColumn extends AbstractStringColumn<TextColumn> {
     return count;
   }
 
+  /** {@inheritDoc} */
   @Override
   public TextColumn removeMissing() {
     TextColumn noMissing = emptyCopy();
@@ -369,11 +397,14 @@ public class TextColumn extends AbstractStringColumn<TextColumn> {
     return noMissing;
   }
 
+  /** {@inheritDoc} */
   @Override
   public Iterator<String> iterator() {
     return values.iterator();
   }
 
+  /** {@inheritDoc} */
+  @Override
   public Set<String> asSet() {
     return new HashSet<>(values);
   }
@@ -381,9 +412,8 @@ public class TextColumn extends AbstractStringColumn<TextColumn> {
   /** Returns the contents of the cell at rowNumber as a byte[] */
   @Override
   public byte[] asBytes(int rowNumber) {
-    return new byte[0];
-    // TODO (lwhite): FIX ME:  return
-    // ByteBuffer.allocate(byteSize()).putInt(getInt(rowNumber)).array();
+    String value = get(rowNumber);
+    return value.getBytes();
   }
 
   /** Added for naming consistency with all other columns */
@@ -393,6 +423,7 @@ public class TextColumn extends AbstractStringColumn<TextColumn> {
     return this;
   }
 
+  /** {@inheritDoc} */
   @Override
   public TextColumn appendObj(Object obj) {
     if (obj == null) {
@@ -405,6 +436,7 @@ public class TextColumn extends AbstractStringColumn<TextColumn> {
     return append((String) obj);
   }
 
+  /** {@inheritDoc} */
   @Override
   public Selection isIn(String... strings) {
     Set<String> stringSet = Sets.newHashSet(strings);
@@ -418,6 +450,7 @@ public class TextColumn extends AbstractStringColumn<TextColumn> {
     return results;
   }
 
+  /** {@inheritDoc} */
   @Override
   public Selection isIn(Collection<String> strings) {
     Set<String> stringSet = Sets.newHashSet(strings);
@@ -431,6 +464,7 @@ public class TextColumn extends AbstractStringColumn<TextColumn> {
     return results;
   }
 
+  /** {@inheritDoc} */
   @Override
   public Selection isNotIn(String... strings) {
     Selection results = new BitmapBackedSelection();
@@ -439,6 +473,7 @@ public class TextColumn extends AbstractStringColumn<TextColumn> {
     return results;
   }
 
+  /** {@inheritDoc} */
   @Override
   public Selection isNotIn(Collection<String> strings) {
     Selection results = new BitmapBackedSelection();
@@ -451,6 +486,7 @@ public class TextColumn extends AbstractStringColumn<TextColumn> {
     return values.indexOf(value);
   }
 
+  /** {@inheritDoc} */
   @Override
   public String[] asObjectArray() {
     final String[] output = new String[size()];
@@ -460,6 +496,7 @@ public class TextColumn extends AbstractStringColumn<TextColumn> {
     return output;
   }
 
+  /** {@inheritDoc} */
   @Override
   public StringColumn asStringColumn() {
     StringColumn textColumn = StringColumn.create(name(), size());

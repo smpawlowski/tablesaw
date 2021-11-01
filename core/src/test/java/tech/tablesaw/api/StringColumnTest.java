@@ -752,6 +752,28 @@ class StringColumnTest {
   }
 
   @Test
+  public void isIn() {
+    String[] data = {"1", "1", "2", "2", "3", "4"};
+    StringColumn col = StringColumn.create("col", data);
+    Table t = Table.create("t", col);
+    String[] data1 = {"1", "2"};
+    StringColumn col1 = StringColumn.create("col1", data1);
+    Table t2 = t.where(t.stringColumn("col").isIn(col1));
+    assertEquals(4, t2.rowCount());
+  }
+
+  @Test
+  public void isNotIn() {
+    String[] data = {"1", "1", "2", "2", "3", "4"};
+    StringColumn col = StringColumn.create("col", data);
+    Table t = Table.create("t", col);
+    String[] data1 = {"1", "2"};
+    StringColumn col1 = StringColumn.create("col1", data1);
+    Table t2 = t.where(t.stringColumn("col").isNotIn(col1));
+    assertEquals(2, t2.rowCount());
+  }
+
+  @Test
   public void countUniqueWithMissing() {
     StringColumn col1 = StringColumn.create("col1");
     col1.append("1");
@@ -776,5 +798,21 @@ class StringColumnTest {
     assertEquals("Value 4", summary.getUnformatted(2, 1));
     assertEquals("Top Freq.", summary.getUnformatted(3, 0));
     assertEquals("1", summary.getUnformatted(3, 1));
+  }
+
+  /** Test that we can append both text and string columns to a string column */
+  @Test
+  void appendTextColumn() {
+    StringColumn col1 = StringColumn.create("col1");
+    col1.append("1");
+    TextColumn col2 = TextColumn.create("col2");
+    col2.append("2");
+    StringColumn col3 = StringColumn.create("col3");
+    col3.append("3");
+    assertEquals(1, col1.size());
+    col1.append(col2);
+    assertEquals(2, col1.size());
+    col1.append(col3);
+    assertEquals(3, col1.size());
   }
 }

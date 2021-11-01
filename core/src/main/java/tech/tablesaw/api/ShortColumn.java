@@ -11,7 +11,9 @@ import it.unimi.dsi.fastutil.shorts.ShortOpenHashSet;
 import it.unimi.dsi.fastutil.shorts.ShortSet;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Set;
 import java.util.stream.Stream;
 import tech.tablesaw.columns.AbstractColumnParser;
 import tech.tablesaw.columns.Column;
@@ -21,10 +23,11 @@ import tech.tablesaw.columns.numbers.ShortColumnType;
 import tech.tablesaw.selection.BitmapBackedSelection;
 import tech.tablesaw.selection.Selection;
 
+/** A column in a table that contains short values */
 public class ShortColumn extends NumberColumn<ShortColumn, Short>
     implements CategoricalColumn<Short> {
 
-  private final ShortArrayList data;
+  protected final ShortArrayList data;
 
   protected ShortColumn(final String name, ShortArrayList data) {
     super(ShortColumnType.instance(), name, ShortColumnType.DEFAULT_PARSER);
@@ -157,9 +160,9 @@ public class ShortColumn extends NumberColumn<ShortColumn, Short>
 
   @Override
   public ShortColumn lag(int n) {
-    final int srcPos = n >= 0 ? 0 : 0 - n;
+    final int srcPos = n >= 0 ? 0 : -n;
     final short[] dest = new short[size()];
-    final int destPos = n <= 0 ? 0 : n;
+    final int destPos = Math.max(n, 0);
     final int length = n >= 0 ? size() - n : size() + n;
 
     for (int i = 0; i < size(); i++) {
@@ -234,6 +237,10 @@ public class ShortColumn extends NumberColumn<ShortColumn, Short>
     return output;
   }
 
+  public short[] asShortArray() {
+    return data.toShortArray();
+  }
+
   @Override
   public int compare(Short o1, Short o2) {
     return Short.compare(o1, o2);
@@ -256,7 +263,13 @@ public class ShortColumn extends NumberColumn<ShortColumn, Short>
 
   @Override
   public ShortColumn append(final Column<Short> column) {
-    Preconditions.checkArgument(column.type() == this.type());
+    Preconditions.checkArgument(
+        column.type() == this.type(),
+        "Column '%s' has type %s, but column '%s' has type %s.",
+        name(),
+        type(),
+        column.name(),
+        column.type());
     final ShortColumn numberColumn = (ShortColumn) column;
     final int size = numberColumn.size();
     for (int i = 0; i < size; i++) {
@@ -268,21 +281,30 @@ public class ShortColumn extends NumberColumn<ShortColumn, Short>
   @Override
   public String getString(final int row) {
     final short value = getShort(row);
-    if (ShortColumnType.valueIsMissing(value)) {
-      return "";
-    }
     return String.valueOf(getPrintFormatter().format(value));
   }
 
   @Override
   public ShortColumn append(Column<Short> column, int row) {
-    Preconditions.checkArgument(column.type() == this.type());
+    Preconditions.checkArgument(
+        column.type() == this.type(),
+        "Column '%s' has type %s, but column '%s' has type %s.",
+        name(),
+        type(),
+        column.name(),
+        column.type());
     return append(((ShortColumn) column).getShort(row));
   }
 
   @Override
   public ShortColumn set(int row, Column<Short> column, int sourceRow) {
-    Preconditions.checkArgument(column.type() == this.type());
+    Preconditions.checkArgument(
+        column.type() == this.type(),
+        "Column '%s' has type %s, but column '%s' has type %s.",
+        name(),
+        type(),
+        column.name(),
+        column.type());
     return set(row, ((ShortColumn) column).getShort(sourceRow));
   }
 
@@ -492,5 +514,11 @@ public class ShortColumn extends NumberColumn<ShortColumn, Short>
       }
     }
     return result;
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public Set<Short> asSet() {
+    return new HashSet<>(unique().asList());
   }
 }
